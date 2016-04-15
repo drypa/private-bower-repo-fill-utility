@@ -19,20 +19,6 @@
         });
     }
 
-    const commands = [
-        'git clone https://github.com/jquery/jquery-dist.git ./jquery',
-        'git clone https://github.com/angular-ui/ui-router.git ./angular-ui-router',
-        'git clone https://github.com/PascalPrecht/bower-angular-translate-storage-cookie.git ./angular-translate-storage-cookie',
-        'git clone https://github.com/PascalPrecht/bower-angular-translate-loader-partial.git ./angular-translate-loader-partial',
-        'git clone https://github.com/PascalPrecht/bower-angular-translate.git ./angular-translate',
-        'git clone https://github.com/angular/bower-angular-route.git ./angular-route',
-        'git clone https://github.com/angular/bower-angular-cookies.git ./angular-cookies',
-        'git clone https://github.com/jashkenas/underscore.git ./underscore',
-        'git clone https://github.com/angular/bower-angular ./angular',
-        'git clone https://github.com/twbs/bootstrap.git ./bootstrap',
-        'git clone https://github.com/mbostock-bower/d3-bower.git ./d3'
-    ];
-
     var options = { // establishing a tunnel
         host: 'localhost',
         port: 3128,
@@ -131,9 +117,4 @@
 
     getBowerPackagesAsync().then((packages) => { findPackageUrl(packages, cloneRepo); });
     
-
-    // for (let i = 0, len = commands.length; i < len; ++i) {
-    //     execute(commands[i]);
-    // }
-
 })();
