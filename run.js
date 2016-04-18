@@ -1,10 +1,6 @@
 (function () {
     'use strict';
 
-    function execute(commandText) {
-        return executeAsync(commandText);
-    }
-
     function executeAsync(commandText) {
         return new Promise(function (resolve) {
             const exec = require('child_process').exec;
@@ -53,14 +49,9 @@
 
 
         return new Promise(function (resolve) {
-            var https = require("https");
             var http = require("http");
-            http.request({ // establishing a tunnel
-                host: 'localhost',
-                port: 3128,
-                method: 'CONNECT',
-                path: 'bower-component-list.herokuapp.com:443',
-            }).on('connect', function (res, socket, head) {
+            http.request(options).on('connect', function (res, socket, head) {
+                var https = require("https");
                 console.log('loading registered bower package list...');
                 // should check res.statusCode here
                 https.get({
@@ -94,27 +85,52 @@
         });
     }
 
-    var packageNameList = ['underscore', 'angular', 'bootstrap'];
+    var packageNameList = ['angular-ui-tree'];
 
     function findPackageUrl(packageList, callback) {
-        var promise;
-        for (var i = 0, len = packageList.length; i < len; ++i) {
-            let el = packageList[i];
-            if (packageNameList.indexOf(el.name) > -1) {
-                if (promise) {
-                    promise = promise.then(() => { return callback(el.name, el.website) });
-                } else {
-                    promise = callback(el.name, el.website);
+        return new Promise(function (resolve) {
+            var promise;
+            for (var i = 0, len = packageList.length; i < len; ++i) {
+                let el = packageList[i];
+                if (packageNameList.indexOf(el.name) > -1) {
+                    if (promise) {
+                        promise = promise.then(() => { return callback(el.name, el.website) });
+                    } else {
+                        promise = callback(el.name, el.website);
+                    }
                 }
             }
-        }
+            promise.then(()=>{resolve(packageList);})
+        });
+
     }
 
     function cloneRepo(name, url) {
         console.log(`cloning: ${url}`);
-        return executeAsync(`git clone ${url} ./${name}`);
+        return executeAsync('cd');//executeAsync(`git clone ${url} ./${name}`);
+    }
+    function registerInPrivateBower(packageName) {
+        console.log(`registering: ${packageName}`);
+    }
+    function registerAllPackages() {
+        console.log(`registering all`);
+        return new Promise(function (resolve) {
+            for(var i = 0,len = packageNameList.length;i<len;++i){
+                registerInPrivateBower(packageNameList[i]);
+            }
+            return resolve();
+        });
     }
 
-    getBowerPackagesAsync().then((packages) => { findPackageUrl(packages, cloneRepo); });
-    
+    getBowerPackagesAsync().then((packages) => 
+                                    { 
+                                        findPackageUrl(packages, cloneRepo).then(()=>
+                                                                            {
+                                                                                registerAllPackages().then(()=>
+                                                                                                            {
+                                                                                                                console.log('done');
+                                                                                                            });
+                                                                            });
+                                    });
+
 })();
