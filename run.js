@@ -59,7 +59,7 @@
                     socket: socket, // using a tunnel
                     agent: false    // cannot use a default agent
                 }, function (res) {
-                    var output = '';
+                    let output = '';
                     res.setEncoding('utf8');
                     res.on('data', function (chunk) {
                         output += chunk;
@@ -85,12 +85,12 @@
         });
     }
 
-    var packageNameList = ['angular-ui-tree'];
+    var packageNameList = ['any'];
 
     function findPackageUrl(packageList, callback) {
         return new Promise(function (resolve) {
             var promise;
-            for (var i = 0, len = packageList.length; i < len; ++i) {
+            for (let i = 0, len = packageList.length; i < len; ++i) {
                 let el = packageList[i];
                 if (packageNameList.indexOf(el.name) > -1) {
                     if (promise) {
@@ -107,18 +107,31 @@
 
     function cloneRepo(name, url) {
         console.log(`cloning: ${url}`);
-        return executeAsync('cd');//executeAsync(`git clone ${url} ./${name}`);
+        return executeAsync(`git clone ${url} ./${name}`);
     }
     function registerInPrivateBower(packageName) {
         console.log(`registering: ${packageName}`);
+        
     }
     function registerAllPackages() {
         console.log(`registering all`);
         return new Promise(function (resolve) {
-            for(var i = 0,len = packageNameList.length;i<len;++i){
-                registerInPrivateBower(packageNameList[i]);
+            if(packageNameList.length<=0){
+                resolve();
+                return;
             }
-            return resolve();
+            
+            let promise = new Promise(function(resolve){
+                    registerInPrivateBower(packageNameList[0]);
+                    resolve();
+                });
+            for(let i = 1,len = packageNameList.length;i<len;++i){
+                    (function(name){
+                        promise = promise.then(()=>{ registerInPrivateBower(name);});
+                    })(packageNameList[i]);
+                }
+
+            promise.then(()=>{resolve();})
         });
     }
 
