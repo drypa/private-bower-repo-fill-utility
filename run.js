@@ -22,6 +22,11 @@
         path: 'bower-component-list.herokuapp.com:443',
     };
     
+    var privateBowerOptions = {
+        url: 'http://private-bower-repo:5678/packages/',
+        sharePath: '\\\\private-bower-repo\\BowerPrivateRepo\\'
+    };
+    
     /**
      * Тут сохраняем кэш списка bower пакетов.
      */
@@ -85,7 +90,7 @@
         });
     }
 
-    var packageNameList = ['any'];
+    var packageNameList = ['epoch','fileupload'];
 
     function findPackageUrl(packageList, callback) {
         return new Promise(function (resolve) {
@@ -110,9 +115,32 @@
         return executeAsync(`git clone ${url} ./${name}`);
     }
     function registerInPrivateBower(packageName) {
-        console.log(`registering: ${packageName}`);
+        return new Promise(function (resolve){
+            console.log(`registering: ${packageName}`);
+            
+            var request = require('request');
+            request.post(privateBowerOptions.url + packageName,
+            { 
+                form: { 
+                    url: getlocalRepoPath(packageName) 
+                },
+            json: true
+            },
+            function (error, response, body) {
+                if (response.statusCode == 200) {
+                    console.log(`successfully registered ${packageName}`);
+                    resolve();
+                }else{
+                    console.log(body);
+                }
+            });    
+        });
         
     }
+    function getlocalRepoPath(packageName){
+        return `file:///${privateBowerOptions.sharePath}${packageName}\\.git`;
+    }
+    
     function registerAllPackages() {
         console.log(`registering all`);
         return new Promise(function (resolve) {
