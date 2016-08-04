@@ -1,5 +1,6 @@
 (function () {
     'use strict';
+    var packageNameList = ['angular-local-storage','angular-selectize'];
 
     function executeAsync(commandText) {
         return new Promise(function (resolve) {
@@ -15,13 +16,10 @@
         });
     }
 
-    var options = { // establishing a tunnel
-        host: 'localhost',
-        port: 3128,
-        method: 'CONNECT',
+    var options = {
         path: 'bower-component-list.herokuapp.com:443',
     };
-    
+
     /**
      * Тут сохраняем кэш списка bower пакетов.
      */
@@ -51,26 +49,22 @@
         return new Promise(function (resolve) {
             var https = require("https");
             var http = require("http");
-            http.request(options).on('connect', function (res, socket, head) {
-                console.log('loading registered bower package list...');
-                // should check res.statusCode here
-                https.get({
-                    host: 'bower-component-list.herokuapp.com',
-                    socket: socket, // using a tunnel
-                    agent: false    // cannot use a default agent
-                }, function (res) {
-                    var output = '';
-                    res.setEncoding('utf8');
-                    res.on('data', function (chunk) {
-                        output += chunk;
-                    });
-                    res.on('end', function () {
-                        saveCache(cacheFilePath, output);
-                        packageRepo = JSON.parse(output);
-                        resolve(packageRepo);
-                    });
+            https.get({
+                host: options.path,
+                socket: socket, // using a tunnel
+                agent: false    // cannot use a default agent
+            }, function (res) {
+                var output = '';
+                res.setEncoding('utf8');
+                res.on('data', function (chunk) {
+                    output += chunk;
                 });
-            }).end();
+                res.on('end', function () {
+                    saveCache(cacheFilePath, output);
+                    packageRepo = JSON.parse(output);
+                    resolve(packageRepo);
+                });
+            });
         });
 
     }
@@ -85,32 +79,35 @@
         });
     }
 
-    var packageNameList = ['underscore', 'angular', 'bootstrap'];
 
-    function findPackageUrl(packageList, callback) {
-        var promise;
-        for (var i = 0, len = packageList.length; i < len; ++i) {
-            let el = packageList[i];
-            if (packageNameList.indexOf(el.name) > -1) {
-                if (promise) {
-                    promise = promise.then(() => { return callback(el.name, el.website) });
-                } else {
-                    promise = callback(el.name, el.website);
+    function findPackageUrl(packageList) {
+        return new Promise((resolve)=> {
+            var itemsList = [];
+            for (var i = 0, len = packageList.length; i < len; ++i) {
+                let el = packageList[i];
+                if (packageNameList.indexOf(el.name) > -1) {
+                    itemsList.push(el);
                 }
             }
-        }
+            resolve(itemsList);
+        });
     }
 
+    function cloneAllRepos(reposList) {
+        var promiseList = [];
+        for (let i = 0, len = reposList.length; i < len; ++i) {
+            promiseList.push(cloneRepo(reposList[i].name,reposList[i].website));
+        }
+        return Promise.all(promiseList);
+    }
+
+
     function cloneRepo(name, url) {
-        console.log(`cloning: ${url}`);
+        console.log(`cloning ${name} from ${url}`);
         return executeAsync(`git clone ${url} ./${name}`);
     }
 
-    getBowerPackagesAsync().then((packages) => { findPackageUrl(packages, cloneRepo); });
-    
+    getBowerPackagesAsync().then(findPackageUrl).then(cloneAllRepos);
 
-    // for (let i = 0, len = commands.length; i < len; ++i) {
-    //     execute(commands[i]);
-    // }
 
 })();
